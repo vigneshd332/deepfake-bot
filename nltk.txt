@@ -2,3 +2,4 @@ punkt
 wordnet
 words
 stopwords
+averaged_perceptron_tagger
