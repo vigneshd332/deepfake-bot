@@ -21,7 +21,6 @@ class MessageCog(commands.Cog):
         self.next_message_time = None
 
         self.TIME_TOLERANCE = 1
-        self.N_GENERATE = 1000
 
     async def cog_check(self, ctx):
         """Only let the bot owner issue commands"""
@@ -67,8 +66,8 @@ class MessageCog(commands.Cog):
             self.config.std_dev_typing_speed,
             self.config.min_typing_speed
         )
-        typing_time = len(txt.split()) / typing_speed
-        logger.info(f'{self.bot.user.name}: typing for {typing_time}s at {typing_speed} wps')
+        typing_time = (len(txt) / 5) / (typing_speed / 60)
+        logger.info(f'{self.bot.user.name}: typing for {typing_time}s at {typing_speed} wpm')
 
         async with ctx.channel.typing():
             # Ignore other messages while typing
@@ -121,15 +120,22 @@ class MessageCog(commands.Cog):
                 # Generate some possible responses
                 res = [
                         punctuate(self.model.make_short_sentence(self.config.max_sentence_length, tries=100))
-                        for i in range(self.N_GENERATE)
+                        for i in range(self.config.max_markov_chains)
                       ]
 
                 # Select the best response
                 sel = self.config.selection_algorithm
                 if sel == 'cosine_similarity':
-                    txt = select_by_cosine_similarity(msg.clean_content, res)
+                    txt, cos = select_by_cosine_similarity(msg.clean_content, res)
+                    logger.info(
+                        f'{self.bot.user.name}: replying to {ctx.message.author.name} with cosine similarity: {cos}'
+                    )
                 elif sel == 'match_words':
-                    txt = select_by_matching_words(msg.clean_content, res)
+                    txt, n_matches = select_by_matching_words(msg.clean_content, res)
+                    logger.info(
+                        f'{self.bot.user.name}: replying to {ctx.message.author.name} with {n_matches} matching words'
+                    )
+
                 else:
                     txt = f'Error: `{sel}` is not a valid selection algorithm'
 

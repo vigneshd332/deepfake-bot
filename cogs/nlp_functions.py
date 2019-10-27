@@ -67,9 +67,9 @@ def select_by_cosine_similarity(prompt, possible_responses):
     if cosine_sim_values[-2] == 0:
         for res in possible_responses:
             if res is not None:
-                return res
+                return res, cosine_sim_values[-2]
     else:
-        return possible_responses[best_match]
+        return possible_responses[best_match], cosine_sim_values[-2]
 
 
 def select_by_matching_words(prompt, candidate_replies):
@@ -88,7 +88,7 @@ def select_by_matching_words(prompt, candidate_replies):
     # Return the first reply having the max score
     for i in range(len(candidate_replies)):
         if scores[i] == max(scores) and candidate_replies[i] is not None:
-            return candidate_replies[i]
+            return candidate_replies[i], max(scores)
 
 
 def normal_with_min(avg, std, minimum):
