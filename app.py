@@ -2,12 +2,15 @@ import os
 import logging
 from discord.ext import commands
 import asyncio
+import boto3
 from cogs.config_cog import ConfigCog
 from cogs.message_cog import MessageCog
 
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
+
+MAX_BOTS = 10
 
 
 if __name__ == "__main__":
@@ -16,39 +19,50 @@ if __name__ == "__main__":
     loop = asyncio.get_event_loop()
     idx = 0
 
-    # Check each config subfolder
-    sub_folders = [i[0] for i in os.walk('./config')]
+    # S3 setup
+    cloudcube_url = os.environ['CLOUDCUBE_URL']
+    access_key = os.environ['CLOUDCUBE_ACCESS_KEY_ID']
+    secret_key = os.environ['CLOUDCUBE_SECRET_ACCESS_KEY']
 
-    for config_path in sub_folders:
+    bucket_name = cloudcube_url.split('.')[0].split('//')[1]
+    cube_name = cloudcube_url.split('/')[-1]
+
+    s3 = boto3.client('s3',
+                      aws_access_key_id=access_key,
+                      aws_secret_access_key=secret_key
+                      )
+
+    for i in range(MAX_BOTS):
+        idx = i + 1
         try:
-            files = os.listdir(config_path)
-            config_file_found = False
-            model_file_found = False
-            for f in files:
-                if f.endswith('-config.json'):
-                    config_file_found = True
-                    config_file = os.path.join(config_path, f)
-                if f.endswith('-markov-model-encrypted.json.gz'):
-                    model_file_found = True
-                    model_file = os.path.join(config_path, f)
+            # Read in the environment variables
+            model_uid = os.environ[f'DEEPFAKE_MODEL_UID_{idx}']
+            model_key = os.environ[f'DEEPFAKE_SECRET_KEY_{idx}']
+            token = os.environ[f'DEEPFAKE_BOT_TOKEN_{idx}']
 
-            if not (config_file_found and model_file_found):
-                continue
+            # Download from S3
+            config_file_name = f'{model_uid}-config.json'
+            config_file_path = f'./tmp/{config_file_name}'
 
-            # Create as many bots as there are config folders...
-            bot_idx = config_path.split(os.sep)[-1]
-            model_key = os.environ[f'DEEPFAKE_SECRET_KEY_{bot_idx}']
-            token = os.environ[f'DEEPFAKE_BOT_TOKEN_{bot_idx}']
+            model_file_name = f'{model_uid}-markov-model-encrypted.json.gz'
+            model_file_path = f'./tmp/{model_file_name}'
 
-            app = commands.Bot(command_prefix=f'df{bot_idx}!')
-            app.add_cog(ConfigCog(app, idx, model_file, model_key, config_file))
+            with open(model_file_path, 'wb') as f:
+                s3.download_fileobj(bucket_name, f'{cube_name}/{model_file_name}', f)
+
+            with open(config_file_path, 'wb') as f:
+                s3.download_fileobj(bucket_name, f'{cube_name}/{config_file_name}', f)
+
+            # Create a bot
+            app = commands.Bot(command_prefix=f'df{idx}!')
+            app.add_cog(ConfigCog(app, idx, model_file_path, model_key, config_file_path))
             app.add_cog(MessageCog(app))
 
             loop.create_task(app.start(token))
-            idx += 1
 
-        except FileNotFoundError:
-            logger.error(f'Problem loading files from {config_path}')
+        except KeyError:
+            # No more environment variables found, exit the loop
+            break
 
     logger.info(f'Found {idx} bot configs...')
 
