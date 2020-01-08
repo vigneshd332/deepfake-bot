@@ -23,11 +23,6 @@ class MessageCog(commands.Cog):
         self.TIME_TOLERANCE = 1
 
     async def cog_check(self, ctx):
-        """Only let the bot owner issue commands"""
-        if ctx.message.author.id != self.config.owner_id:
-            await ctx.send('Sorry, you don\'t have permission to do that.')
-            return False
-
         if ctx.guild.id not in self.config.white_list_server_ids:
             await ctx.send('Sorry, I don\'t have permission to run on this server.')
             return False
