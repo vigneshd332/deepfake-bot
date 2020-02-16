@@ -49,7 +49,7 @@ class ConfigCog(commands.Cog):
         logger.info(self.bot.user.id)
 
     async def cog_check(self, ctx):
-        if ctx.guild.id not in self.config.white_list_server_ids:
+        if ctx.guild.id not in self.configuration.white_list_server_ids:
             await ctx.send('Sorry, I don\'t have permission to run on this server.')
             return False
 
