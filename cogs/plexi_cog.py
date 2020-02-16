@@ -40,7 +40,7 @@ class PlexiCog(commands.Cog):
 
         if response.status_code == 200:
             result = response.json()[0]['url']
-            ctx.send(result)
+            await ctx.send(result)
         else:
             await ctx.send('Something is wrong. Sorry...')
 
