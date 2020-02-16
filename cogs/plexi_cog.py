@@ -39,14 +39,14 @@ class PlexiCog(commands.Cog):
         response = requests.get('https://api.thecatapi.com/v1/images/search')
 
         if response.status_code == 200:
-            result = response.json()['url']
+            result = response.json()[0]['url']
             ctx.send(result)
         else:
             await ctx.send('Something is wrong. Sorry...')
 
     @commands.command()
     async def asciify(self, ctx, txt):
-        """Makes ascii art out of your text. E.g.: `df1!asciify 'I am awesome'`"""
+        """Makes ascii art out of your text. E.g.: `df1!asciify "I am awesome"`"""
         
         url = 'http://artii.herokuapp.com/make?text=' + txt.replace(' ', '+')
         response = requests.get(url)
