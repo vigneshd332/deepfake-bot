@@ -86,6 +86,9 @@ class ConfigCog(commands.Cog):
             await ctx.send(f'**Usage**: `{self.bot.command_prefix}config set <parameter name> <value>`')
             return
 
+        if ctx.message.author != self.configuration.owner_id:
+            await ctx.send('Sorry. You don\'t have permission to do that.')
+
         # Make sure this is something configurable
         if parameter not in self.configuration.parameters:
             await ctx.send(f'{parameter} is not a valid parameter')
