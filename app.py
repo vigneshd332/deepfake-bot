@@ -5,6 +5,7 @@ import asyncio
 import boto3
 from cogs.config_cog import ConfigCog
 from cogs.message_cog import MessageCog
+from cogs.plexi_cog import PlexiCog
 
 
 logger = logging.getLogger(__name__)
@@ -57,6 +58,7 @@ if __name__ == "__main__":
             app = commands.Bot(command_prefix=f'df{idx}!')
             app.add_cog(ConfigCog(app, idx, model_file_path, model_key, config_file_path))
             app.add_cog(MessageCog(app))
+            app.add_cog(PlexiCog(app))
 
             loop.create_task(app.start(token))
 
