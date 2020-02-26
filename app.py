@@ -33,7 +33,7 @@ class S3:
     def get_file(file_name):
         """Downloads a file to the ./tmp folder"""
         local_file_name = f'./tmp/{file_name}'
-        with open(local_file_name), 'wb') as f:
+        with open(local_file_name, 'wb') as f:
             f.write(self.resource.Object(self.bucket_name, file_name).get()['Body'].read())
 
     def get_json(file_name):
