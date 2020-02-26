@@ -18,9 +18,9 @@ MAX_BOTS = 10
 class S3:
     """Handles writing and reading files to and from S3"""
     def __init__(self):
-        self.cloudcube_url = os.environ['CLOUDCUBE_URL']
-        self.access_key = os.environ['CLOUDCUBE_ACCESS_KEY_ID']
-        self.secret_key = os.environ['CLOUDCUBE_SECRET_ACCESS_KEY']
+        cloudcube_url = os.environ['CLOUDCUBE_URL']
+        access_key = os.environ['CLOUDCUBE_ACCESS_KEY_ID']
+        secret_key = os.environ['CLOUDCUBE_SECRET_ACCESS_KEY']
 
         self.bucket_name = cloudcube_url.split('.')[0].split('//')[1]
         self.cube_name = cloudcube_url.split('/')[-1]
