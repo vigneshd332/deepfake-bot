@@ -74,20 +74,14 @@ class MessageCog(commands.Cog):
             self.can_reply = True
             self.schedule_new_conversation(ctx)
 
-        self.bot.loop.create_task(
-            self.sleep_and_start_conversation(ctx)
-        )
+        if self.config.reply_probability > 0:
+            self.bot.loop.create_task(
+                self.sleep_and_start_conversation(ctx)
+            )
 
     @commands.command()
-    async def repeat(self, ctx, msg):
-        """Function for testing. Bot will repeat the message in the command."""
-        logger.info(msg)
-        channel = ctx.message.channel
-        await channel.send(msg)
-
-    @commands.command()
-    async def generate(self, ctx):
-        """Generates a random sentence from your model."""
+    async def impersonate(self, ctx):
+        """Replies in a style similar to the training subject."""
         txt = self.model.make_short_sentence(self.config.max_sentence_length, tries=100)
         txt = punctuate(txt)
         if txt is not None:
