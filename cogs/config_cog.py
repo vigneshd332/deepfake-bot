@@ -16,11 +16,12 @@ class ConfigCog(commands.Cog):
         def __init__(self, config_dict):
             self.__dict__ = config_dict
 
-    def __init__(self, bot, index, model_file, model_key, config_file):
+    def __init__(self, bot, idx, model_uid, model_key, s3):
         self.bot = bot
         self.index = index
+        self.model_uid = model_uid
         self.model_key = model_key
-        self.config_file = config_file
+        self.s3 = s3
 
         # Read in the model file
         with open(model_file, mode='rb') as f:
@@ -34,13 +35,13 @@ class ConfigCog(commands.Cog):
             model_raw_json = gzip.decompress(decrypted_content).decode()
             self.model = markovify.Text.from_json(model_raw_json)
 
-        # Read in the config file
-        with open(config_file) as f:
-            self.configuration = ConfigCog.BotConfig(json.loads(f.read()))
-            self.configuration.parameters = []
-            for k in self.configuration.__dict__.keys():
-                if not k.startswith('__'):
-                    self.configuration.parameters.append(k)
+        # Set the config parameters
+        config_json = s3.get_json(f'{self.model_uid}-config.json')
+        self.configuration = ConfigCog.BotConfig(config_json)
+        self.configuration.parameters = []
+        for k in self.configuration.__dict__.keys():
+            if not k.startswith('__'):
+                self.configuration.parameters.append(k)
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -105,4 +106,10 @@ class ConfigCog(commands.Cog):
 
         # Make the change if all is well
         self.configuration.__setattr__(parameter, new_value)
-        await ctx.send(f'`{parameter}` changed from {old_value} to {new_value}')
+
+        # Update the config file in S3
+        s3_updated = self.s3.update_json(f'{self.model_uid}-config.json', self.configuration.__dict__)
+        if s3_updated:
+            await ctx.send(f'`{parameter}` changed from {old_value} to {new_value}')
+        else:
+            await ctx.send('There was a problem updating config...')
