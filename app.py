@@ -30,13 +30,13 @@ class S3:
                                        aws_secret_access_key=secret_key
                                       )
     
-    def get_file(file_name):
+    def get_file(self, file_name):
         """Downloads a file to the ./tmp folder"""
         local_file_name = f'./tmp/{file_name}'
         with open(local_file_name, 'wb') as f:
             f.write(self.resource.Object(self.bucket_name, file_name).get()['Body'].read())
 
-    def get_json(file_name):
+    def get_json(self, file_name):
         """Reads the contents of a json file in S3 and returns it as an object"""
         raw_content = self.resource.Object(self.bucket_name, file_name).get()['Body'].read()
         try:
@@ -45,7 +45,7 @@ class S3:
             logger.error(e)
             return False
 
-    def update_json(file_name, obj):
+    def update_json(self, file_name, obj):
         """Updates a json file in S3"""
         payload = json.dumps(obj)
         try:
