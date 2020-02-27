@@ -1,4 +1,3 @@
-import logging
 from discord.ext import commands
 import asyncio
 import random
@@ -47,9 +46,9 @@ class MessageCog(commands.Cog):
         """Schedule a new conversation. Calling this again will defer any other scheduled conversations."""
         self.last_message_time = time.time()
         self.next_message_time = self.last_message_time + \
-                                 self.config.new_conversation_min_wait + \
-                                 random.random() * \
-                                 (self.config.new_conversation_max_wait - self.config.new_conversation_min_wait)
+            self.config.new_conversation_min_wait + \
+            random.random() * \
+            (self.config.new_conversation_max_wait - self.config.new_conversation_min_wait)
 
         t = datetime.utcfromtimestamp(self.next_message_time).strftime('%Y-%m-%d %H:%M:%S')
         logger.info(f'{self.bot.user.name}: New conversation scheduled for {t}')
