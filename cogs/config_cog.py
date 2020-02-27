@@ -2,17 +2,16 @@ from discord.ext import commands
 from cryptography.fernet import Fernet
 import gzip
 import markovify
-import json
 import logging
 
 logger = logging.getLogger(__name__)
 
 
 class ConfigCog(commands.Cog):
-    """Loads the configuration and stores the state of our bot"""
+    """Loads the configuration and stores the state of your bot"""
 
-    # Lets us quickly read in our json config
     class BotConfig(object):
+        """Lets us quickly read in our json config"""
         def __init__(self, config_dict):
             self.__dict__ = config_dict
 
@@ -38,10 +37,17 @@ class ConfigCog(commands.Cog):
         # Set the config parameters
         config_json = s3.get_json(f'{self.model_uid}-config.json')
         self.configuration = ConfigCog.BotConfig(config_json)
-        self.configuration.parameters = []
+        self.config_parameters = []
         for k in self.configuration.__dict__.keys():
             if not k.startswith('__'):
-                self.configuration.parameters.append(k)
+                self.config_parameters.append(k)
+        
+        # Set the command prefix
+        self.bot.command_prefix = self.configuration.bot_prefix
+
+    def update_s3(self):
+        """Saves the current bot configuration to S3. Returns false if there was an issue."""
+        return self.s3.update_json(f'{self.model_uid}-config.json', self.configuration.__dict__)
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -61,6 +67,11 @@ class ConfigCog(commands.Cog):
         """Used to configure your bot"""
         pass
 
+    @config.group()
+    async def whitelist(self, ctx):
+        """Used to change the servers on which the bot has permission to reply"""
+        pass
+
     @config.command()
     async def help(self, ctx):
         response = f'**Usage**:\n`{self.bot.command_prefix}config set <parameter name> <value>`\n'
@@ -71,7 +82,7 @@ class ConfigCog(commands.Cog):
     async def show(self, ctx):
         """Dsiplays the current configuration"""
         response = ''
-        for k in self.configuration.parameters:
+        for k in self.config_parameters:
             v = self.configuration.__getattribute__(k)
             response += f'`{k}: {v}`\n'
 
@@ -87,12 +98,19 @@ class ConfigCog(commands.Cog):
             await ctx.send(f'**Usage**: `{self.bot.command_prefix}config set <parameter name> <value>`')
             return
 
-        if ctx.message.author != self.configuration.owner_id:
+        if ctx.message.author.id != self.configuration.owner_id:
             await ctx.send('Sorry. You don\'t have permission to do that.')
+            return
 
         # Make sure this is something configurable
-        if parameter not in self.configuration.parameters:
+        if parameter not in self.config_parameters:
             await ctx.send(f'{parameter} is not a valid parameter')
+            return
+        
+        # Use another command. Otherwise, reading a list will be problematic.
+        if parameter == 'white_list_server_ids':
+            await ctx.send('That can\'t be changed with `config set` '
+                           'Use `{self.bot.command_prefix}config whitelist add/remove` instead.')
             return
 
         # Check the data type
@@ -107,9 +125,56 @@ class ConfigCog(commands.Cog):
         # Make the change if all is well
         self.configuration.__setattr__(parameter, new_value)
 
+        # Also update the prefix if applicable
+        if parameter == 'bot_prefix':
+            self.bot.command_prefix = new_value
+
         # Update the config file in S3
-        s3_updated = self.s3.update_json(f'{self.model_uid}-config.json', self.configuration.__dict__)
-        if s3_updated:
+        if self.update_s3():
             await ctx.send(f'`{parameter}` changed from {old_value} to {new_value}')
         else:
             await ctx.send('There was a problem updating config...')
+
+    @whitelist.command()
+    async def add(self, ctx, *args):
+        """Adds a server id to the whitelist"""
+        if len(args) == 1:
+            value = args[0]
+        else:
+            await ctx.send(f'**Usage**: `{self.bot.command_prefix}config whitelist add <value>`')
+            return
+
+        if ctx.message.author.id != self.configuration.owner_id:
+            await ctx.send('Sorry. You don\'t have permission to do that.')
+            return
+
+        if value not in self.configuration.white_list_server_ids:
+            self.configuration.white_list_server_ids.append(value)
+            if self.update_s3():
+                await ctx.send(f'Added {value} to server white list')
+            else:
+                await ctx.send('There was a problem updating config...')
+        else:
+            await ctx.send(f'{value} was already white listed')
+
+    @whitelist.command()
+    async def remove(self, ctx, *args):
+        """Removes a server id from the whitelist"""
+        if len(args) == 1:
+            value = args[0]
+        else:
+            await ctx.send(f'**Usage**: `{self.bot.command_prefix}config whitelist remove <value>`')
+            return
+
+        if ctx.message.author.id != self.configuration.owner_id:
+            await ctx.send('Sorry. You don\'t have permission to do that.')
+            return
+
+        if value in self.configuration.white_list_server_ids:
+            self.configuration.white_list_server_ids.remove(value)
+            if self.update_s3():
+                await ctx.send(f'Removed {value} from server white list')
+            else:
+                await ctx.send('There was a problem updating config...')
+        else:
+            await ctx.send(f'{value} was already not in white list')
