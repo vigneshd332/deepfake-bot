@@ -34,11 +34,11 @@ class S3:
         """Downloads a file to the ./tmp folder"""
         local_file_name = f'./tmp/{file_name}'
         with open(local_file_name, 'wb') as f:
-            f.write(self.resource.Object(self.bucket_name, file_name).get()['Body'].read())
+            f.write(self.resource.Object(self.bucket_name, f'{self.cube_name}/{file_name}').get()['Body'].read())
 
     def get_json(self, file_name):
         """Reads the contents of a json file in S3 and returns it as an object"""
-        raw_content = self.resource.Object(self.bucket_name, file_name).get()['Body'].read()
+        raw_content = self.resource.Object(self.bucket_name, f'{self.cube_name}/{file_name}').get()['Body'].read()
         try:
             return json.loads(raw_content)
         except JSONDecodeError as e:
@@ -49,7 +49,7 @@ class S3:
         """Updates a json file in S3"""
         payload = json.dumps(obj)
         try:
-            self.resource.Object(self.bucket_name, file_name).put(Body=payload)
+            self.resource.Object(self.bucket_name, f'{self.cube_name}/{file_name}').put(Body=payload)
             return True
         except Exception as e:
             logger.error(e)
@@ -62,6 +62,9 @@ if __name__ == "__main__":
     loop = asyncio.get_event_loop()
     idx = 0
 
+    # S3 handler
+    my_s3 = S3()
+
     for i in range(MAX_BOTS):
         idx = i + 1
         try:
@@ -69,9 +72,6 @@ if __name__ == "__main__":
             model_uid = os.environ[f'DEEPFAKE_MODEL_UID_{idx}']
             model_key = os.environ[f'DEEPFAKE_SECRET_KEY_{idx}']
             token = os.environ[f'DEEPFAKE_BOT_TOKEN_{idx}']
-
-            # S3 handler
-            my_s3 = S3()
 
             # Read the config
             config = my_s3.get_json(f'{model_uid}-config.json')

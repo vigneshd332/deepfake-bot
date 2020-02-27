@@ -18,13 +18,13 @@ class ConfigCog(commands.Cog):
 
     def __init__(self, bot, idx, model_uid, model_key, s3):
         self.bot = bot
-        self.index = index
+        self.idx = idx
         self.model_uid = model_uid
         self.model_key = model_key
         self.s3 = s3
 
         # Read in the model file
-        with open(model_file, mode='rb') as f:
+        with open(f'./tmp/{model_uid}-markov-model-encrypted.json.gz', mode='rb') as f:
 
             # Decryption
             encrypted_content = f.read()
