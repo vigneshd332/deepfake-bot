@@ -1,5 +1,4 @@
 import requests
-import json
 import logging
 from discord.ext import commands
 
@@ -7,8 +6,8 @@ from discord.ext import commands
 logger = logging.getLogger(__name__)
 
 
-class PlexiCog(commands.Cog):
-    """Some extra commands to meet the server requirements"""
+class SillyCog(commands.Cog):
+    """Some silly, fun commands"""
     def __init__(self, bot):
         self.bot = bot
         self.config = self.bot.get_cog('ConfigCog').configuration
