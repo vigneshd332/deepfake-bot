@@ -22,6 +22,9 @@ class ConfigCog(commands.Cog):
         self.model_key = model_key
         self.s3 = s3
 
+        # Download the model file
+        s3.get_file(f'{model_uid}-markov-model-encrypted.json.gz')
+
         # Read in the model file
         with open(f'./tmp/{model_uid}-markov-model-encrypted.json.gz', mode='rb') as f:
 

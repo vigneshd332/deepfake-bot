@@ -6,7 +6,7 @@ import asyncio
 import boto3
 from cogs.config_cog import ConfigCog
 from cogs.message_cog import MessageCog
-from cogs.plexi_cog import PlexiCog
+from cogs.silly_cog import SillyCog
 
 
 logger = logging.getLogger(__name__)
@@ -28,7 +28,7 @@ class S3:
         self.resource = boto3.resource('s3',
                                        aws_access_key_id=access_key,
                                        aws_secret_access_key=secret_key
-                                      )
+                                       )
     
     def get_file(self, file_name):
         """Downloads a file to the ./tmp folder"""
@@ -73,25 +73,19 @@ if __name__ == "__main__":
             model_key = os.environ[f'DEEPFAKE_SECRET_KEY_{idx}']
             token = os.environ[f'DEEPFAKE_BOT_TOKEN_{idx}']
 
-            # Read the config
-            config = my_s3.get_json(f'{model_uid}-config.json')
-
-            # Download the model file
-            my_s3.get_file(f'{model_uid}-markov-model-encrypted.json.gz')
-
             # Create a bot
-            app = commands.Bot(command_prefix=f'df{idx}!')
+            app = commands.Bot(command_prefix=f'df{idx}?')
             app.add_cog(ConfigCog(app, idx, model_uid, model_key, my_s3))
             app.add_cog(MessageCog(app))
-            app.add_cog(PlexiCog(app))
+            app.add_cog(SillyCog(app))
 
             loop.create_task(app.start(token))
 
-        except KeyError:
+        except KeyError as e:
             # No more environment variables found, exit the loop
             break
 
-    logger.info(f'Found {idx} bot configs...')
+    logger.info(f'Found {idx - 1} bot configs...')
 
     try:
         loop.run_forever()
