@@ -115,6 +115,11 @@ class ConfigCog(commands.Cog):
             await ctx.send('That can\'t be changed with `config set` '
                            'Use `{self.bot.command_prefix}config whitelist add/remove` instead.')
             return
+        
+        # It makes no sense to reconfigure this
+        if parameter == 'version':
+            await ctx.send('That is not something you can change.')
+            return
 
         # Check the data type
         try:
